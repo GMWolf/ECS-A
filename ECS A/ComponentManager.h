@@ -17,8 +17,8 @@ namespace ecsa {
 		T& get(int e);
 		T& operator[](int e);
 		template<typename... Ts>
-		T& create(int e, Ts... ts);
-		void destroy(int e);
+		T& create(int e, Ts&&... ts);
+		void destroy(int e) override;
 		
 
 	private:
@@ -39,12 +39,12 @@ namespace ecsa {
 
 	template<typename T>
 	template<typename... Ts>
-	T& ComponentManager<T>::create(int e, Ts... ts) {
+	T& ComponentManager<T>::create(int e, Ts&&... ts) {
 
 		//new (components + e) T(ts...);
 		
 		
-		components.emplace(e, ts...);
+		components.emplace(e, std::forward<Ts>(ts)...);
 
 		if (e >= entities.size()) {
 			entities.resize((e + 1), false);

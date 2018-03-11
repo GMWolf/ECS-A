@@ -5,7 +5,7 @@
 #include "SimpleAllocator.h"
 template<class T>
 struct Chunk {
-	Chunk(int capacity) : items(new T[capacity]), usage(0) {
+	Chunk(int capacity) : items(new T[capacity]) {
 
 	}
 
@@ -17,8 +17,34 @@ struct Chunk {
 		return items[i];
 	}
 
+	void put(unsigned int i, T& o)
+	{
+		items[i] == o;
+		if (usage.size() <= i)
+		{
+			usage.resize(i);
+		}
+		usage[i] = true;
+	}
+
+	template<class ...Ts>
+	void emplace(unsigned int i, Ts&&... args)
+	{
+		new (items + i) T(std::forward<Ts>(args)...);
+		if (usage.size() <= i)
+		{
+			usage.resize(i+1);
+		}
+		usage[i] = true;
+	}
+
+	void erase(unsigned int i)
+	{
+		usage[i] = false;
+	}
+
 	T* items;
-	unsigned int usage;
+	vector_bool usage;
 };
 
 
@@ -31,7 +57,7 @@ public:
 	~HashedArrayTree();
 
 	template<class... Ts>
-	T& emplace(int e, Ts... args);
+	T& emplace(int e, Ts&&... args);
 
 	void erase(int e);
 
@@ -70,11 +96,13 @@ inline void HashedArrayTree<T>::erase(int e)
 {
 	int chunkIndex = getChunkIndex(e);
 	Chunk<T>* chunk = chunks[chunkIndex];
-	chunk->usage--;
-	if (chunk->usage == 0) {
+	chunk->erase(getIndex(e));
+
+	if (std::find(chunk->usage.begin(), chunk->usage.end(), true) == chunk->usage.end()) {
 		allocator.free(chunk);
+		chunks[chunkIndex] = nullptr;
 	}
-	chunks[chunkIndex] = nullptr;
+	
 }
 
 template<class T>
@@ -109,7 +137,7 @@ inline Chunk<T>* HashedArrayTree<T>::getChunk(int e)
 
 template<class T>
 template<class ...Ts>
-inline T & HashedArrayTree<T>::emplace(int e, Ts ...args)
+inline T & HashedArrayTree<T>::emplace(int e, Ts&& ...args)
 {
 
 	int chunkIndex = getChunkIndex(e);
@@ -125,7 +153,6 @@ inline T & HashedArrayTree<T>::emplace(int e, Ts ...args)
 	Chunk<T>* chunk = chunks[chunkIndex];
 
 	int index = getIndex(e);
-	new (chunk->items + index) T(args...);
-	chunk->usage++;
+	chunk->emplace(index, std::forward<Ts>(args)...);
 	return (*chunk)[index];
 }

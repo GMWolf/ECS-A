@@ -20,10 +20,12 @@ namespace ecsa {
 
 		std::vector<std::bitset<MAX_COMPONENT_COUNT>>& aspects;
 		int componentId;
+		virtual void destroy(int e) = 0;
 	protected:
 		
 		vector_bool entities;
 		std::vector<ComponentListener*> listeners;
+		
 	};
 
 }
